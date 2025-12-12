@@ -205,12 +205,12 @@ export default function SatisfaccionDashboard({
       </section>
 
       {/* RESTO */}
-      <section>
+      {/* <section>
         <h2 className="mb-3 text-sm font-semibold text-slate-700">
           Otros indicadores del ámbito
         </h2>
         <IndicatorGrid filtered={filtered} clickable={false} />
-      </section>
+      </section> */}
     </div>
   );
 }

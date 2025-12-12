@@ -13,6 +13,7 @@ import EstacionalidadDashboard from "@/components/ambito/EstacionalidadDashboard
 import RendimientoDashboard from "@/components/ambito/RendimientoDashboard";
 import SatisfaccionLocalDashboard from "@/components/ambito/SatisfaccionLocalDashboard";
 import SatisfaccionTuristicaDashboard from "@/components/ambito/SatisfaccionTuristicaDashboard";
+import BeneficiosEconomicosDashboard from "@/components/ambito/BeneficiosEconomicosDashboard";
 
 type AmbitoPageClientProps = {
   data: DashboardData;
@@ -127,6 +128,17 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
   ) {
     return (
       <SatisfaccionTuristicaDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Beneficio económico
+  if (scopeKey.includes("beneficios") && scopeKey.includes("econ")) {
+    return (
+      <BeneficiosEconomicosDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
         data={scopeIndicators}

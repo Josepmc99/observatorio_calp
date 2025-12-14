@@ -339,7 +339,7 @@ export default function GestionAguasDashboard({
                   Detalle
                 </div>
                 <div className="mt-1 text-base font-semibold text-slate-900">
-                  {active?.indicator ?? "Selecciona una tarjeta"}
+                  {active?.indicator ?? "Selecciona un indicador"}
                 </div>
               </div>
 
@@ -355,18 +355,20 @@ export default function GestionAguasDashboard({
             </div>
 
             {!active ? (
-              <p className="mt-3 text-sm text-slate-500">
-                Haz clic en una tarjeta para ver descripción, fuente, método y
-                comentarios.
-              </p>
+              <div className="mt-3 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <Info className="mt-0.5 h-4 w-4" />
+                <p>Haz clic en una tarjeta para ver el detalle completo.</p>
+              </div>
             ) : (
               <div className="mt-4 space-y-4">
                 <KV label="ETIS" value={active.etis ?? "—"} />
                 <KV label="Año" value={String(active.year ?? "—")} />
                 <KV
                   label="Valor"
-                  value={`${formatByUnit(active)} ${
-                    active.unidad && active.unidad !== "%" ? active.unidad : ""
+                  value={`${formatByUnit(active)}${
+                    active.unidad && !String(active.unidad).includes("%")
+                      ? ` ${active.unidad}`
+                      : ""
                   }`.trim()}
                   accent
                 />
@@ -374,12 +376,15 @@ export default function GestionAguasDashboard({
                 <KV label="Tiempo" value={active.at ?? "—"} />
                 <KV label="Organismo" value={active.organismo ?? "—"} />
                 <KV label="Fuente" value={active.fuente ?? "—"} />
+
                 <Divider />
+
                 <Block label="Descripción" value={active.description ?? "—"} />
                 <Block
                   label="Datos requeridos"
                   value={active.requiredData ?? "—"}
                 />
+
                 {active.formula && (
                   <Block label="Método de cálculo" value={active.formula} />
                 )}

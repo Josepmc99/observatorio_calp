@@ -2,7 +2,7 @@
 
 import React, { FC, useMemo, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, BadgeEuro } from "lucide-react";
+import { TrendingUp, BadgeEuro, Info } from "lucide-react";
 import type { IndicatorRow } from "@/lib/loadExcelData";
 import IndicatorGrid from "@/components/IndicatorGrid";
 
@@ -311,11 +311,11 @@ export default function BeneficiosEconomicosDashboard({
                   Detalle
                 </div>
                 <div className="mt-1 text-base font-semibold text-slate-900">
-                  {active?.indicator ?? "Selecciona un indicador"}
+                  {active?.description ?? "Selecciona un indicador"}
                 </div>
               </div>
 
-              {active?.indicator && (
+              {active && (
                 <button
                   type="button"
                   onClick={() => setActiveKey(null)}
@@ -327,36 +327,31 @@ export default function BeneficiosEconomicosDashboard({
             </div>
 
             {!active ? (
-              <p className="mt-3 text-sm text-slate-500">
-                Haz clic en una ficha para ver la descripción completa, fórmula,
-                datos requeridos y observaciones.
-              </p>
+              <div className="mt-4 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Haz clic en una tarjeta para ver el detalle completo.</p>
+              </div>
             ) : (
-              <div className="mt-4 space-y-4">
-                <KeyValue
-                  label="Año de referencia"
-                  value={String(active.year ?? "—")}
-                />
+              <div className="mt-4 space-y-4 text-sm">
+                <KeyValue label="Indicador" value={active.indicator ?? "—"} />
                 <KeyValue
                   label="Valor"
                   value={`${formatValue(active.value)} ${
-                    active.unidad ?? active.at ?? ""
+                    active.unidad ?? ""
                   }`.trim()}
                   accent
                 />
-                <KeyValue
-                  label="Unidad"
-                  value={active.unidad ?? active.at ?? "—"}
-                />
-                <KeyValue
-                  label="Fuente"
-                  value={active.fuente ?? active.organismo ?? "—"}
-                />
+                <KeyValue label="Unidad" value={active.unidad ?? "—"} />
+                <KeyValue label="Tiempo" value={active.at ?? "—"} />
+                <KeyValue label="Organismo" value={active.organismo ?? "—"} />
+                <KeyValue label="Fuente" value={active.fuente ?? "—"} />
 
                 <Divider />
 
-                <Block label="Descripción" value={active.description ?? "—"} />
-                <Block label="Fórmula" value={active.formula ?? "—"} />
+                <Block
+                  label="Método de cálculo"
+                  value={active.formula ?? "—"}
+                />
                 <Block
                   label="Datos requeridos"
                   value={active.requiredData ?? "—"}

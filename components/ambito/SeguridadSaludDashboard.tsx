@@ -302,11 +302,11 @@ export default function SeguridadSaludDashboard({
                   Detalle
                 </div>
                 <div className="mt-1 text-base font-semibold text-slate-900">
-                  {active?.description ?? "Selecciona una tarjeta"}
+                  {active?.indicator ?? "Selecciona un indicador"}
                 </div>
               </div>
 
-              {active && (
+              {active?.indicator && (
                 <button
                   type="button"
                   onClick={() => setActiveKey(null)}
@@ -318,34 +318,32 @@ export default function SeguridadSaludDashboard({
             </div>
 
             {!active ? (
-              <div className="mt-3 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                <Info className="mt-0.5 h-4 w-4" />
-                <p>
-                  Haz clic en una tarjeta para ver descripción, fuente, método y
-                  comentarios.
-                </p>
+              <div className="mt-4 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Haz clic en una ficha para ver el detalle completo.</p>
               </div>
             ) : (
               <div className="mt-4 space-y-4">
-                <KV label="ETIS" value={active.etis ?? "—"} />
-                <KV label="Año" value={String(active.year ?? "—")} />
-                <KV
+                <KeyValue
+                  label="Año de referencia"
+                  value={String(active.year ?? "—")}
+                />
+                <KeyValue
                   label="Valor"
-                  value={formatNum(active.value ?? null, 2)}
+                  value={`${formatNum(active.value)} ${
+                    active.unidad ?? ""
+                  }`.trim()}
                   accent
                 />
-                <KV label="Unidad" value={active.unidad ?? "—"} />
-                <KV label="Tiempo" value={active.at ?? "—"} />
-                <KV label="Organismo" value={active.organismo ?? "—"} />
-                <KV label="Fuente" value={active.fuente ?? "—"} />
+                <KeyValue label="Unidad" value={active.unidad ?? "—"} />
+                <KeyValue label="Fuente" value={active.fuente ?? "—"} />
+                <KeyValue label="Organismo" value={active.organismo ?? "—"} />
+                <KeyValue label="AT" value={active.at ?? "—"} />
 
                 <Divider />
 
-                <Block label="Indicador" value={active.indicator ?? "—"} />
-                <Block
-                  label="Método de cálculo"
-                  value={active.formula ?? "—"}
-                />
+                <Block label="Descripción" value={active.description ?? "—"} />
+                <Block label="Fórmula" value={active.formula ?? "—"} />
                 <Block
                   label="Datos requeridos"
                   value={active.requiredData ?? "—"}
@@ -366,7 +364,7 @@ export default function SeguridadSaludDashboard({
 
 const Divider: FC = () => <div className="h-px w-full bg-slate-100" />;
 
-const KV: FC<{ label: string; value: string; accent?: boolean }> = ({
+const KeyValue: FC<{ label: string; value: string; accent?: boolean }> = ({
   label,
   value,
   accent,

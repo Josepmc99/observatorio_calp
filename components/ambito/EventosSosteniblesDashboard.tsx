@@ -3,6 +3,7 @@
 import React, { FC, useMemo, useState } from "react";
 import Link from "next/link";
 import type { IndicatorRow } from "@/lib/loadExcelData";
+import { Info } from "lucide-react";
 
 type Props = {
   scopeId: string;
@@ -323,16 +324,16 @@ const EventosSosteniblesDashboard: FC<Props> = ({
         <aside className="lg:col-span-1">
           <div className="sticky top-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
                   Detalle
                 </div>
                 <div className="mt-1 text-base font-semibold text-slate-900">
-                  {active?.description ?? "Selecciona un indicador"}
+                  {active?.indicator ?? "Selecciona un indicador"}
                 </div>
               </div>
 
-              {active && (
+              {active?.indicator && (
                 <button
                   type="button"
                   onClick={() => setActiveKey(null)}
@@ -344,9 +345,10 @@ const EventosSosteniblesDashboard: FC<Props> = ({
             </div>
 
             {!active ? (
-              <p className="mt-3 text-sm text-slate-500">
-                Haz clic en una ficha para ver el detalle completo.
-              </p>
+              <div className="mt-4 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Haz clic en una ficha para ver el detalle completo.</p>
+              </div>
             ) : (
               <div className="mt-4 space-y-4">
                 <KeyValue
@@ -355,7 +357,9 @@ const EventosSosteniblesDashboard: FC<Props> = ({
                 />
                 <KeyValue
                   label="Valor"
-                  value={`${formatValue(active)} ${active.unidad ?? ""}`.trim()}
+                  value={`${formatNum(active.value)} ${
+                    active.unidad ?? ""
+                  }`.trim()}
                   accent
                 />
                 <KeyValue label="Unidad" value={active.unidad ?? "—"} />

@@ -3,6 +3,7 @@
 import React, { FC, useMemo, useState } from "react";
 import Link from "next/link";
 import type { IndicatorRow } from "@/lib/loadExcelData";
+import { Info } from "lucide-react";
 
 type Props = {
   scopeId: string;
@@ -323,7 +324,7 @@ export default function AccesibilidadDashboard({
         <aside className="lg:col-span-1">
           <div className="sticky top-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
                   Detalle
                 </div>
@@ -344,31 +345,24 @@ export default function AccesibilidadDashboard({
             </div>
 
             {!active ? (
-              <p className="mt-3 text-sm text-slate-500">
-                Haz clic en una ficha para ver el detalle completo.
-              </p>
+              <div className="mt-4 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Haz clic en una tarjeta para ver el detalle completo.</p>
+              </div>
             ) : (
-              <div className="mt-4 space-y-4">
-                <KeyValue
-                  label="Año de referencia"
-                  value={String(active.year ?? "—")}
-                />
-                <KeyValue
-                  label="Valor"
-                  value={`${formatValue(active)} ${active.unidad ?? ""}`.trim()}
-                  accent
-                />
+              <div className="mt-4 space-y-4 text-sm">
+                <KeyValue label="Indicador" value={active.indicator ?? "—"} />
                 <KeyValue label="Unidad" value={active.unidad ?? "—"} />
-                <KeyValue label="ETIS" value={active.etis ?? "—"} />
-                <KeyValue label="Fuente" value={active.fuente ?? "—"} />
+                <KeyValue label="Tiempo" value={active.at ?? "—"} />
                 <KeyValue label="Organismo" value={active.organismo ?? "—"} />
-                <KeyValue label="AT" value={active.at ?? "—"} />
+                <KeyValue label="Fuente" value={active.fuente ?? "—"} />
 
                 <Divider />
 
-                <Block label="Indicador" value={active.indicator ?? "—"} />
-                <Block label="Descripción" value={active.description ?? "—"} />
-                <Block label="Fórmula" value={active.formula ?? "—"} />
+                <Block
+                  label="Método de cálculo"
+                  value={active.formula ?? "—"}
+                />
                 <Block
                   label="Datos requeridos"
                   value={active.requiredData ?? "—"}

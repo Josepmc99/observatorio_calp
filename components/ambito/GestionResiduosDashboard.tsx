@@ -360,7 +360,7 @@ export default function GestionResiduosDashboard({
                   Detalle
                 </div>
                 <div className="mt-1 text-base font-semibold text-slate-900">
-                  {active?.indicator ?? "Selecciona una tarjeta"}
+                  {active?.indicator ?? "Selecciona un indicador"}
                 </div>
               </div>
 
@@ -378,10 +378,7 @@ export default function GestionResiduosDashboard({
             {!active ? (
               <div className="mt-3 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                 <Info className="mt-0.5 h-4 w-4" />
-                <p>
-                  Haz clic en una tarjeta para ver descripción, fuente, método y
-                  comentarios.
-                </p>
+                <p>Haz clic en una tarjeta para ver el detalle completo.</p>
               </div>
             ) : (
               <div className="mt-4 space-y-4">

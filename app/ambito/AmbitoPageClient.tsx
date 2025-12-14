@@ -14,6 +14,18 @@ import RendimientoDashboard from "@/components/ambito/RendimientoDashboard";
 import SatisfaccionLocalDashboard from "@/components/ambito/SatisfaccionLocalDashboard";
 import SatisfaccionTuristicaDashboard from "@/components/ambito/SatisfaccionTuristicaDashboard";
 import BeneficiosEconomicosDashboard from "@/components/ambito/BeneficiosEconomicosDashboard";
+import GestionAguasDashboard from "@/components/ambito/GestionAguasDashboard";
+import GestionResiduosDashboard from "@/components/ambito/GestionResiduosDashboard";
+import AccionClimaDashboard from "@/components/ambito/AccionClimaDashboard";
+import ImpactoSocialDashboard from "@/components/ambito/ImpactoSocialDashboard";
+import SeguridadSaludDashboard from "@/components/ambito/SeguridadSaludDashboard";
+import ReduccionImpactoTransporteDashboard from "@/components/ambito/ReduccionImpactoTransporteDashboard";
+import EventosSosteniblesDashboard from "@/components/ambito/EventosSosteniblesDashboard";
+import ProteccionPaisajeBiodiversidadDashboard from "@/components/ambito/ProteccionPaisajeBiodiversidad";
+import EducacionFormacionSostenibleDashboard from "@/components/ambito/EducacionFormacionSostenibleDashboard";
+import AccesibilidadDashboard from "@/components/ambito/AccesibilidadDashboard";
+import GestionEnergeticaDashboard from "@/components/ambito/GestionEnergeticaDashboard";
+import CadenaSuministrosDashboard from "@/components/ambito/CadenaSuministrosDashboard";
 
 type AmbitoPageClientProps = {
   data: DashboardData;
@@ -139,6 +151,149 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
   if (scopeKey.includes("beneficios") && scopeKey.includes("econ")) {
     return (
       <BeneficiosEconomicosDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Gestión de aguas
+  if (scopeKey.includes("agua")) {
+    return (
+      <GestionAguasDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Gestión de residuos
+  if (scopeKey.includes("residuos")) {
+    return (
+      <GestionResiduosDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Acción por el clima
+  if (
+    scopeKey.includes("acción por el clima") ||
+    scopeKey.includes("accion por el clima")
+  ) {
+    return (
+      <AccionClimaDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Impacto social / comunitario
+  if (scopeKey.includes("impacto social") || scopeKey.includes("comunitario")) {
+    return (
+      <ImpactoSocialDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Seguridad y salud
+  if (scopeKey.includes("seguridad") || scopeKey.includes("salud")) {
+    return (
+      <SeguridadSaludDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Reducción del impacto del transporte
+  if (scopeKey.includes("transporte") || scopeKey.includes("impacto")) {
+    return (
+      <ReduccionImpactoTransporteDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Eventos sostenibles
+  if (scopeKey.includes("Eventos") || scopeKey.includes("sostenibles")) {
+    return (
+      <EventosSosteniblesDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Protección del paisaje y la biodiversidad
+  if (
+    scopeKey.includes("Protección") ||
+    scopeKey.includes("paisaje") ||
+    scopeKey.includes("biodiversidad")
+  ) {
+    return (
+      <ProteccionPaisajeBiodiversidadDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Educación, formación y sensibilización para el turismo sostenible
+  if (
+    scopeKey.includes("Educación") ||
+    scopeKey.includes("formación") ||
+    scopeKey.includes("sostenible")
+  ) {
+    return (
+      <EducacionFormacionSostenibleDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Accesibilidad
+  if (scopeKey.includes("Accesibiliad") || scopeKey.includes("accesibilidad")) {
+    return (
+      <AccesibilidadDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  // ✅ Gestión energética
+  if (scopeKey.includes("Gestión") || scopeKey.includes("energética")) {
+    return (
+      <GestionEnergeticaDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeIndicators}
+      />
+    );
+  }
+
+  //  ✅ Cadena de suministros
+  if (scopeKey.includes("Cadena") || scopeKey.includes("suministros")) {
+    return (
+      <CadenaSuministrosDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
         data={scopeIndicators}

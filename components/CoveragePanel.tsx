@@ -44,15 +44,9 @@ const CoveragePanel: FC<CoveragePanelProps> = ({
             barSize={12}
             data={[{ name: "Cobertura", value: coverage, fill: scopeColor }]}
             startAngle={180}
-            endAngle={0}
+            endAngle={0} // semi-círculo (izq→der). Si lo quieres al revés, invierte ángulos.
           >
-            <RadialBar
-              minAngle={15}
-              background
-              clockWise
-              dataKey="value"
-              cornerRadius={999}
-            />
+            <RadialBar dataKey="value" background cornerRadius={999} />
             <Legend
               iconSize={10}
               layout="vertical"
@@ -63,7 +57,7 @@ const CoveragePanel: FC<CoveragePanelProps> = ({
         </ResponsiveContainer>
       )}
 
-      <div className="mt-2 text-xs text-slate-500 space-y-1">
+      <div className="mt-2 space-y-1 text-xs text-slate-500">
         <p>
           Cobertura:{" "}
           <span className="font-semibold text-slate-900">

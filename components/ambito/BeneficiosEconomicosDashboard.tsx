@@ -1,10 +1,11 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { TrendingUp, BadgeEuro, Info } from "lucide-react";
 import type { IndicatorRow } from "@/lib/loadExcelData";
 import IndicatorGrid from "@/components/IndicatorGrid";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type Props = {
   scopeId: string;
@@ -35,16 +36,22 @@ export default function BeneficiosEconomicosDashboard({
           data
             .map((d) => d.year)
             .filter(
-              (y): y is number => typeof y === "number" && !Number.isNaN(y)
-            )
-        )
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
       ).sort((a, b) => b - a),
-    [data]
+    [data],
   );
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[0] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
+
   const [query, setQuery] = useState<string>("");
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
@@ -104,7 +111,7 @@ export default function BeneficiosEconomicosDashboard({
     }
 
     return Array.from(map.values()).sort((a, b) =>
-      (a.indicator ?? "").localeCompare(b.indicator ?? "", "es")
+      (a.indicator ?? "").localeCompare(b.indicator ?? "", "es"),
     );
   }, [filtered]);
 
@@ -159,7 +166,7 @@ export default function BeneficiosEconomicosDashboard({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="w-44 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97373]/40"

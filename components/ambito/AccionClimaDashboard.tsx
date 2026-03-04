@@ -1,10 +1,11 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Leaf, Waves, CalendarDays, AlertTriangle, Info } from "lucide-react";
 
 import type { IndicatorRow } from "@/lib/loadExcelData";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 /* =======================
    Helpers
@@ -57,24 +58,30 @@ export default function AccionClimaDashboard({
           data
             .map((d) => d.year)
             .filter(
-              (y): y is number => typeof y === "number" && !Number.isNaN(y)
-            )
-        )
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
       ).sort((a, b) => b - a),
-    [data]
+    [data],
   );
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[0] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
+
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
   const filtered = useMemo(
     () =>
       data.filter((d) =>
-        selectedYear != null ? d.year === selectedYear : true
+        selectedYear != null ? d.year === selectedYear : true,
       ),
-    [data, selectedYear]
+    [data, selectedYear],
   );
 
   const cards = useMemo(() => {
@@ -91,7 +98,7 @@ export default function AccionClimaDashboard({
 
   const active = useMemo(
     () => cards.find((c) => c.cardKey === activeKey)?.row ?? null,
-    [cards, activeKey]
+    [cards, activeKey],
   );
 
   return (
@@ -127,7 +134,7 @@ export default function AccionClimaDashboard({
             value={selectedYear ?? ""}
             onChange={(e) =>
               setSelectedYear(
-                e.target.value === "" ? null : Number(e.target.value)
+                e.target.value === "" ? null : Number(e.target.value),
               )
             }
             className="w-40 rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm"
@@ -151,10 +158,10 @@ export default function AccionClimaDashboard({
               const Icon = row.description?.includes("protegidas")
                 ? Leaf
                 : row.description?.includes("playa")
-                ? Waves
-                : row.description?.includes("estacionalidad")
-                ? CalendarDays
-                : AlertTriangle;
+                  ? Waves
+                  : row.description?.includes("estacionalidad")
+                    ? CalendarDays
+                    : AlertTriangle;
 
               return (
                 <button

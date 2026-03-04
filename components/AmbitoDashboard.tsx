@@ -1,19 +1,15 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import IndicatorGrid from "./IndicatorGrid";
 import CoveragePanel from "./CoveragePanel";
 import ComparisonChart from "./ComparisonChart";
 import DetailsSection from "./DetailsSection";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
-import type {
-  IndicatorRow,
-  TouristRow,
-  LodgingRow,
-  DashboardData,
-} from "@/lib/loadExcelData";
+import type { IndicatorRow } from "@/lib/loadExcelData";
 
 /* ----------------------------------------------------------
    PROPS
@@ -73,26 +69,32 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
           data
             .map((d) => d.year)
             .filter(
-              (y): y is number => typeof y === "number" && !Number.isNaN(y)
-            )
-        )
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
       ).sort((a, b) => a - b),
-    [data]
+    [data],
   );
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[years.length - 1] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
+
   const [selectedIndicator, setSelectedIndicator] = useState<string | null>(
-    null
+    null,
   );
 
   const filtered = useMemo<IndicatorRow[]>(
     () =>
       data.filter((d) =>
-        selectedYear != null ? d.year === selectedYear : true
+        selectedYear != null ? d.year === selectedYear : true,
       ),
-    [data, selectedYear]
+    [data, selectedYear],
   );
 
   const totalIndicators = filtered.length;
@@ -123,7 +125,7 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
     }
 
     return Array.from(map.values()).sort(
-      (a, b) => (b.value ?? 0) - (a.value ?? 0)
+      (a, b) => (b.value ?? 0) - (a.value ?? 0),
     );
   }, [filtered]);
 
@@ -144,7 +146,7 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
     const rows = data
       .filter((d) => d.indicator === activeIndicator.indicator)
       .filter(
-        (d): d is IndicatorRow & { year: number } => typeof d.year === "number"
+        (d): d is IndicatorRow & { year: number } => typeof d.year === "number",
       )
       .sort((a, b) => a.year - b.year);
 
@@ -174,9 +176,9 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
       filtered
         .filter((d) => d.indicator)
         .sort((a, b) =>
-          (a.indicator || "").localeCompare(b.indicator || "", "es")
+          (a.indicator || "").localeCompare(b.indicator || "", "es"),
         ),
-    [filtered]
+    [filtered],
   );
 
   const scopeColor = SCOPE_COLORS[scopeName] || DEFAULT_SCOPE_COLOR;
@@ -207,7 +209,7 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm"

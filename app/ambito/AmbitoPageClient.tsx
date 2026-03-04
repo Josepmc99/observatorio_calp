@@ -58,6 +58,7 @@ import {
 
 type AmbitoPageClientProps = {
   data: DashboardData;
+  initialYear?: number | null;
 };
 
 function norm(s: string) {
@@ -281,7 +282,13 @@ function seguimiento(rows: IndicatorRow[]) {
       weight: 0,
     };
   if (opc > 0 && oblig === 0)
-    return { label: "Opcional", tone: "amber" as const, oblig, opc, weight: 2 };
+    return {
+      label: "Adicional",
+      tone: "amber" as const,
+      oblig,
+      opc,
+      weight: 2,
+    };
   if (opc > 0 && oblig > 0)
     return { label: "Mixto", tone: "slate" as const, oblig, opc, weight: 1 };
   return {
@@ -304,14 +311,20 @@ function coverageStats(rows: IndicatorRow[]) {
 export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
   const searchParams = useSearchParams();
   const decodedScopeId = (searchParams.get("scopeId") ?? "").trim();
+  const yearParam = searchParams.get("year");
+  const yearParamStr = yearParam ?? "";
+  const selectedYear = yearParam ? Number(yearParam) : null;
+  const hasSelectedYear = Number.isFinite(selectedYear as number);
 
-  const scopeIndicators = useMemo(
-    () =>
-      data.indicators.filter(
-        (d) => (d.scopeId ?? "").trim() === decodedScopeId
-      ),
-    [data.indicators, decodedScopeId]
-  );
+  const scopeIndicators = useMemo(() => {
+    const filtered = data.indicators.filter(
+      (d) => (d.scopeId ?? "").trim() === decodedScopeId,
+    );
+
+    if (!hasSelectedYear) return filtered;
+
+    return filtered.filter((d) => d.year === selectedYear);
+  }, [data.indicators, decodedScopeId, hasSelectedYear, selectedYear]);
 
   /** Listado de ámbitos agrupado por scopeId */
   const scopes = useMemo(() => {
@@ -334,7 +347,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     return Array.from(map.values());
   }, [data.indicators]);
 
-  // ✅ Premium listado si no hay scopeId
+  // listado si no hay scopeId
   const [query, setQuery] = useState("");
 
   const filteredScopes = useMemo(() => {
@@ -352,7 +365,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
         const hay = norm(
           [s.scopeName, s.meta.description, s.seg.label]
             .filter(Boolean)
-            .join(" · ")
+            .join(" · "),
         );
         return hay.includes(q);
       })
@@ -424,6 +437,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
           {filteredScopes.map((s) => (
             <ScopeCard
               key={s.scopeId}
+              yearParam={yearParamStr}
               scopeId={s.scopeId}
               scopeName={s.scopeName}
               description={s.meta.description}
@@ -451,7 +465,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     );
   }
 
-  // ✅ si hay scopeId pero no hay datos
+  // si hay scopeId pero no hay datos
   if (scopeIndicators.length === 0) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10 space-y-2">
@@ -461,7 +475,10 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
         <p className="text-lg font-medium text-slate-700">“{decodedScopeId}”</p>
         <p className="text-sm text-slate-500">
           Vuelve al listado en{" "}
-          <Link href="/ambito" className="underline">
+          <Link
+            href={`/ambito${yearParamStr ? `?year=${encodeURIComponent(yearParamStr)}` : ""}`}
+            className="underline"
+          >
             /ambito
           </Link>
           .
@@ -713,8 +730,8 @@ function SegChip({
     tone === "emerald"
       ? "bg-emerald-50 text-emerald-700"
       : tone === "amber"
-      ? "bg-amber-50 text-amber-700"
-      : "bg-slate-100 text-slate-700";
+        ? "bg-amber-50 text-amber-700"
+        : "bg-slate-100 text-slate-700";
 
   const suffix = label === "Mixto" ? ` (${oblig} oblig. · ${opc} opc.)` : "";
 
@@ -730,6 +747,7 @@ function SegChip({
 
 function ScopeCard(props: {
   scopeId: string;
+  yearParam: string;
   scopeName: string;
   description: string;
   Icon: any;
@@ -749,6 +767,7 @@ function ScopeCard(props: {
   const {
     scopeId,
     scopeName,
+    yearParam,
     description,
     Icon,
     accent,
@@ -769,7 +788,9 @@ function ScopeCard(props: {
 
   return (
     <Link
-      href={`/ambito?scopeId=${encodeURIComponent(scopeId)}`}
+      href={`/ambito?scopeId=${encodeURIComponent(scopeId)}${
+        yearParam ? `&year=${encodeURIComponent(yearParam)}` : ""
+      }`}
       className="group rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-200"
     >
       {/* Header con gradiente */}
@@ -873,8 +894,8 @@ function MiniKpi({
   const tone = good
     ? "text-emerald-700 bg-emerald-50 border-emerald-100"
     : warn
-    ? "text-amber-700 bg-amber-50 border-amber-100"
-    : "text-slate-900 bg-white border-slate-200";
+      ? "text-amber-700 bg-amber-50 border-amber-100"
+      : "text-slate-900 bg-white border-slate-200";
 
   return (
     <div className={`rounded-xl border px-3 py-2 ${tone}`}>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import type {
@@ -10,6 +10,7 @@ import type {
   DashboardData,
 } from "@/lib/loadExcelData";
 import IndicatorGrid from "@/components/IndicatorGrid";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type Props = {
   scopeId: string;
@@ -49,17 +50,23 @@ export default function RendimientoDashboard({
     return Array.from(set).sort((a, b) => b - a);
   }, [lodgings, indicators]);
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[0] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
+
   const [tipo, setTipo] = useState<string>("");
 
   const filteredIndicators = useMemo(
     () =>
       indicators.filter((d) =>
-        selectedYear != null ? d.year === selectedYear : true
+        selectedYear != null ? d.year === selectedYear : true,
       ),
-    [indicators, selectedYear]
+    [indicators, selectedYear],
   );
 
   const tipos = useMemo(() => {
@@ -79,15 +86,15 @@ export default function RendimientoDashboard({
   const summary = useMemo(() => {
     const totalCantidad = lodgingFiltered.reduce(
       (s, r) => s + (r.cantidad ?? 0),
-      0
+      0,
     );
     const totalPlazas = lodgingFiltered.reduce(
       (s, r) => s + (r.plazas ?? 0),
-      0
+      0,
     );
     const totalParcelas = lodgingFiltered.reduce(
       (s, r) => s + (r.parcelas ?? 0),
-      0
+      0,
     );
 
     const avgPctTipo = (() => {
@@ -141,7 +148,7 @@ export default function RendimientoDashboard({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="w-44 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97373]/40"

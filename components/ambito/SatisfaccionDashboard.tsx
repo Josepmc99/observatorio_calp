@@ -1,12 +1,13 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Smile, Frown, Scale } from "lucide-react";
 
 import type { IndicatorRow } from "@/lib/loadExcelData";
 import IndicatorGrid from "@/components/IndicatorGrid";
 import Stars from "@/components/ui/Stars";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type Props = {
   scopeId: string;
@@ -64,33 +65,38 @@ export default function SatisfaccionDashboard({
           data
             .map((d) => d.year)
             .filter(
-              (y): y is number => typeof y === "number" && !Number.isNaN(y)
-            )
-        )
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
       ).sort((a, b) => b - a),
-    [data]
+    [data],
   );
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[0] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
 
   const filtered = useMemo(
     () =>
       data.filter((d) =>
-        selectedYear != null ? d.year === selectedYear : true
+        selectedYear != null ? d.year === selectedYear : true,
       ),
-    [data, selectedYear]
+    [data, selectedYear],
   );
 
   const positive = useMemo(
     () => filtered.find((d) => isEtis(d, etisPositive)) ?? null,
-    [filtered, etisPositive]
+    [filtered, etisPositive],
   );
 
   const negative = useMemo(
     () => filtered.find((d) => isEtis(d, etisNegative)) ?? null,
-    [filtered, etisNegative]
+    [filtered, etisNegative],
   );
 
   const balance =
@@ -130,7 +136,7 @@ export default function SatisfaccionDashboard({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97373]/40"

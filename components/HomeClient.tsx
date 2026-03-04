@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import React, { useMemo, useState } from "react";
 import {
   Landmark,
@@ -27,6 +28,7 @@ import {
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
+import { pickDefaultYear, PREFERRED_DEFAULT_YEAR } from "@/lib/pickDefaultYear";
 
 type ScopeStats = {
   scopeId: string;
@@ -37,17 +39,48 @@ type ScopeStats = {
   coverage: number;
   oblig: number;
   opc: number;
-  segLabel: "Obligatorio" | "Opcional" | "Mixto" | "Sin clasificar";
+  segLabel: "Obligatorio" | "Adicional" | "Mixto" | "Sin clasificar";
   segTone: "emerald" | "amber" | "slate";
 };
 
 type Props = {
-  statsByScope: ScopeStats[];
-  global: { total: number; withValue: number; coverage: number };
+  indicators: {
+    year: number | null;
+    scopeId: string | null;
+    scope: string | null;
+    value: number | null;
+    at: string | null;
+  }[];
+  years: number[];
+  defaultYear: number | null;
 };
 
 function norm(s: string) {
   return (s ?? "").trim().toLowerCase();
+}
+
+function safeHasValue(v: any) {
+  return typeof v === "number" && !Number.isNaN(v);
+}
+
+function isObligatorio(at: string | null | undefined) {
+  const v = norm(at ?? "");
+  return v.includes("oblig");
+}
+
+function isOpcional(at: string | null | undefined) {
+  const v = norm(at ?? "");
+  return v.includes("dicional") || v.includes("opcion");
+}
+
+function segFromCounts(oblig: number, opc: number) {
+  if (oblig > 0 && opc === 0)
+    return { segLabel: "Obligatorio" as const, segTone: "emerald" as const };
+  if (opc > 0 && oblig === 0)
+    return { segLabel: "Adicional" as const, segTone: "amber" as const };
+  if (opc > 0 && oblig > 0)
+    return { segLabel: "Mixto" as const, segTone: "slate" as const };
+  return { segLabel: "Sin clasificar" as const, segTone: "slate" as const };
 }
 
 function scopeMeta(scopeName: string) {
@@ -98,7 +131,7 @@ function scopeMeta(scopeName: string) {
     k.includes("satisfaccion turistica")
   )
     return {
-      icon: Users, // cámbialo si quieres otro
+      icon: Users,
       desc: "Percepción turística: satisfacción positiva/negativa y balance.",
       accent: "#2563EB",
       grad: "from-blue-50 to-white",
@@ -235,8 +268,8 @@ function SegChip({
     tone === "emerald"
       ? "bg-emerald-50 text-emerald-700"
       : tone === "amber"
-      ? "bg-amber-50 text-amber-700"
-      : "bg-slate-100 text-slate-700";
+        ? "bg-amber-50 text-amber-700"
+        : "bg-slate-100 text-slate-700";
 
   return (
     <span
@@ -251,11 +284,92 @@ function formatInt(n: number) {
   return n.toLocaleString("es-ES");
 }
 
-export default function HomeClient({ statsByScope, global }: Props) {
+export default function HomeClient({ indicators, years, defaultYear }: Props) {
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years, defaultYear ?? PREFERRED_DEFAULT_YEAR),
+  );
+
   const [query, setQuery] = useState("");
   const [segFilter, setSegFilter] = useState<"Todos" | ScopeStats["segLabel"]>(
-    "Todos"
+    "Todos",
   );
+
+  const indicatorsYear = useMemo(() => {
+    if (selectedYear == null) return indicators;
+    return indicators.filter((r) => r.year === selectedYear);
+  }, [indicators, selectedYear]);
+
+  const statsByScope: ScopeStats[] = useMemo(() => {
+    const map = new Map<
+      string,
+      { scopeId: string; scopeName: string; rows: typeof indicatorsYear }
+    >();
+
+    for (const row of indicatorsYear) {
+      if (!row.scopeId || !row.scope) continue;
+      const id = row.scopeId.trim();
+      const name = row.scope.trim();
+      if (!id) continue;
+
+      if (!map.has(id))
+        map.set(id, { scopeId: id, scopeName: name, rows: [] as any });
+      map.get(id)!.rows.push(row);
+    }
+
+    const out = Array.from(map.values()).map(({ scopeId, scopeName, rows }) => {
+      const total = rows.length;
+      const withValue = rows.filter((r) => safeHasValue(r.value)).length;
+      const missing = total - withValue;
+      const coverage = total > 0 ? (withValue / total) * 100 : 0;
+
+      const oblig = rows.filter((r) => isObligatorio(r.at)).length;
+      const opc = rows.filter((r) => isOpcional(r.at)).length;
+      const seg = segFromCounts(oblig, opc);
+
+      return {
+        scopeId,
+        scopeName,
+        total,
+        withValue,
+        missing,
+        coverage,
+        oblig,
+        opc,
+        ...seg,
+      };
+    });
+
+    // Orden: obligatorio primero, luego más cobertura, luego alfabético
+    out.sort((a, b) => {
+      const weight = (x: ScopeStats) =>
+        x.segLabel === "Obligatorio"
+          ? 0
+          : x.segLabel === "Mixto"
+            ? 1
+            : x.segLabel === "Adicional"
+              ? 2
+              : 3;
+
+      const wa = weight(a);
+      const wb = weight(b);
+      if (wa !== wb) return wa - wb;
+
+      if (b.coverage !== a.coverage) return b.coverage - a.coverage;
+
+      return a.scopeName.localeCompare(b.scopeName, "es");
+    });
+
+    return out;
+  }, [indicatorsYear]);
+
+  const global = useMemo(() => {
+    const total = indicatorsYear.length;
+    const withValue = indicatorsYear.filter((r) =>
+      safeHasValue(r.value),
+    ).length;
+    const coverage = total > 0 ? (withValue / total) * 100 : 0;
+    return { total, withValue, coverage };
+  }, [indicatorsYear]);
 
   const filteredScopes = useMemo(() => {
     const q = norm(query);
@@ -272,7 +386,7 @@ export default function HomeClient({ statsByScope, global }: Props) {
           s.scopeId,
           String(s.total),
           String(s.withValue),
-        ].join(" ")
+        ].join(" "),
       );
 
       const qOk = q.length === 0 ? true : haystack.includes(q);
@@ -294,15 +408,15 @@ export default function HomeClient({ statsByScope, global }: Props) {
       <div className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#7F1D1D] to-[#9F1239] text-xs font-bold text-white shadow-sm">
-              OC
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-clip-border text-xs font-bold ">
+              <Image src="/logo.jpg" alt="Logo" width={70} height={70} />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-slate-900">
                 Observatorio Calp ·{" "}
-                <span className="text-[#7F1D1D]">Red INSTO</span>
+                <span className="text-[#0070C0]">Red INSTO</span>
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm text-slate-500">
                 Monitor de ámbitos e indicadores turísticos sostenibles
               </p>
             </div>
@@ -323,7 +437,8 @@ export default function HomeClient({ statsByScope, global }: Props) {
               Selecciona un ámbito
             </h2>
             <p className="text-sm text-slate-500">
-              Filtra por texto y por tipo de seguimiento (obligatorio/opcional).
+              Filtra por texto y por tipo de seguimiento
+              (Obligatorio/Adicional).
             </p>
 
             <div className="mt-2 flex flex-wrap gap-2 text-xs">
@@ -344,7 +459,7 @@ export default function HomeClient({ statsByScope, global }: Props) {
 
           {/* Buscador + filtro */}
           <div className="w-full md:w-[420px] space-y-2">
-            <div className="flex gap-2">
+            <div className="flex gap-2 ">
               <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-slate-200">
                 <Search className="h-4 w-4 text-slate-400" />
                 <input
@@ -364,24 +479,45 @@ export default function HomeClient({ statsByScope, global }: Props) {
                 <option value="Todos">Todos</option>
                 <option value="Obligatorio">Obligatorio</option>
                 <option value="Mixto">Mixto</option>
-                <option value="Opcional">Opcional</option>
+                <option value="Adicional">Adicional</option>
                 <option value="Sin clasificar">Sin clasificar</option>
               </select>
             </div>
 
-            <div className="text-[11px] text-slate-500">
-              Mostrando{" "}
-              <span className="font-semibold text-slate-800">
-                {filteredScopes.length}
-              </span>{" "}
-              ámbitos
+            <div className="flex justify-end items-center gap-4">
+              <div className="text-[11px] text-slate-500">
+                Mostrando{" "}
+                <span className="font-semibold text-slate-800">
+                  {filteredScopes.length}
+                </span>{" "}
+                ámbitos
+              </div>
+              <select
+                value={selectedYear ?? ""}
+                onChange={(e) =>
+                  setSelectedYear(
+                    e.target.value ? Number(e.target.value) : null,
+                  )
+                }
+                className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm w-32"
+                title="Filtrar por año"
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </header>
 
         <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredScopes.map((s) => {
-            const href = `/ambito?scopeId=${encodeURIComponent(s.scopeId)}`;
+            const href = `/ambito?scopeId=${encodeURIComponent(
+              s.scopeId,
+            )}&year=${encodeURIComponent(String(selectedYear ?? ""))}`;
+
             const meta = scopeMeta(s.scopeName);
 
             const Icon = meta.icon;
@@ -515,8 +651,8 @@ function MiniKpi({
   const tone = good
     ? "text-emerald-700 bg-emerald-50 border-emerald-100"
     : warn
-    ? "text-amber-700 bg-amber-50 border-amber-100"
-    : "text-slate-900 bg-white border-slate-200";
+      ? "text-amber-700 bg-amber-50 border-amber-100"
+      : "text-slate-900 bg-white border-slate-200";
 
   return (
     <div className={`rounded-xl border px-3 py-2 ${tone}`}>

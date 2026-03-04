@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   LineChart,
@@ -15,6 +15,7 @@ import {
 
 import type { IndicatorRow, TouristRow } from "@/lib/loadExcelData";
 import IndicatorGrid from "@/components/IndicatorGrid";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type Props = {
   scopeId: string;
@@ -85,22 +86,27 @@ export default function EstacionalidadDashboard({
     return Array.from(set).sort((a, b) => b - a);
   }, [tourists, indicators]);
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[0] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
 
   const filteredIndicators = useMemo(
     () =>
       indicators.filter((d) =>
-        selectedYear != null ? d.year === selectedYear : true
+        selectedYear != null ? d.year === selectedYear : true,
       ),
-    [indicators, selectedYear]
+    [indicators, selectedYear],
   );
 
   /** Serie mensual en números absolutos */
   const series = useMemo(() => {
     const rows = tourists.filter((t) =>
-      selectedYear != null ? t.year === selectedYear : true
+      selectedYear != null ? t.year === selectedYear : true,
     );
 
     const map = new Map<
@@ -168,7 +174,7 @@ export default function EstacionalidadDashboard({
         const t = r.total ?? 0;
         return t > acc.total ? { month: r.month, total: t } : acc;
       },
-      { month: "—", total: -Infinity }
+      { month: "—", total: -Infinity },
     );
 
     return {
@@ -225,7 +231,7 @@ export default function EstacionalidadDashboard({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="w-full md:w-48 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -388,15 +394,15 @@ const BigKpi: FC<{
     tone === "foreign"
       ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
       : tone === "national"
-      ? "border-orange-200 bg-gradient-to-br from-orange-50 to-white"
-      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white";
+        ? "border-orange-200 bg-gradient-to-br from-orange-50 to-white"
+        : "border-slate-200 bg-gradient-to-br from-slate-50 to-white";
 
   const valueClass =
     tone === "foreign"
       ? "text-blue-700"
       : tone === "national"
-      ? "text-orange-700"
-      : "text-slate-900";
+        ? "text-orange-700"
+        : "text-slate-900";
 
   return (
     <div className={`rounded-3xl border p-5 shadow-sm ${toneClasses}`}>

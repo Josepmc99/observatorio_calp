@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type {
   IndicatorRow,
@@ -11,6 +11,7 @@ import type {
 import IndicatorGrid from "../IndicatorGrid";
 import CoveragePanel from "../CoveragePanel";
 import DetailsSection from "../DetailsSection";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type AmbientalDashboardProps = {
   scopeId: string;
@@ -31,26 +32,31 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
           data
             .map((d) => d.year)
             .filter(
-              (y): y is number => typeof y === "number" && !Number.isNaN(y)
-            )
-        )
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
       ).sort((a, b) => a - b),
-    [data]
+    [data],
   );
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[years.length - 1] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    pickDefaultYear(years),
   );
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
   const [selectedIndicator, setSelectedIndicator] = useState<string | null>(
-    null
+    null,
   );
 
   const filtered = useMemo<IndicatorRow[]>(
     () =>
       data.filter((d) =>
-        selectedYear != null ? d.year === selectedYear : true
+        selectedYear != null ? d.year === selectedYear : true,
       ),
-    [data, selectedYear]
+    [data, selectedYear],
   );
 
   const totalIndicators = filtered.length;
@@ -84,7 +90,7 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
     const rows = data
       .filter((d) => d.indicator === activeIndicator.indicator)
       .filter(
-        (d): d is IndicatorRow & { year: number } => typeof d.year === "number"
+        (d): d is IndicatorRow & { year: number } => typeof d.year === "number",
       )
       .sort((a, b) => a.year - b.year);
 
@@ -148,7 +154,7 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm"

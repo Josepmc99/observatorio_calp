@@ -7,18 +7,21 @@ type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 export default function SatisfaccionTuristicaDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }: Props) {
   return (
     <SatisfaccionDashboard
       scopeId={scopeId}
       scopeName={scopeName}
       data={data}
+      initialYear={initialYear}
       breadcrumbLabel="Satisfacción turística"
       intro="Percepción y nivel de satisfacción de los turistas con el destino."
       etisPositive="A.2.1.1"

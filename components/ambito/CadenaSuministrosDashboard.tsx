@@ -10,6 +10,7 @@ type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 const PRIMARY = "#7F1D1D";
@@ -64,6 +65,7 @@ export default function CadenaSuministrosDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }: Props) {
   const years = useMemo<number[]>(
     () =>
@@ -80,8 +82,11 @@ export default function CadenaSuministrosDashboard({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

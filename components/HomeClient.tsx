@@ -414,7 +414,15 @@ export default function HomeClient({ indicators, years, defaultYear }: Props) {
             <div>
               <h1 className="text-xl font-semibold text-slate-900">
                 Observatorio Calp ·{" "}
-                <span className="text-[#0070C0]">Red INSTO</span>
+                <span className="text-[#0070C0]">
+                  <a
+                    href="https://www.untourism.int/sustainable-development/un-tourism-international-network-of-sustainable-tourism-observatories"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Red INSTO
+                  </a>
+                </span>
               </h1>
               <p className="text-sm text-slate-500">
                 Monitor de ámbitos e indicadores turísticos sostenibles

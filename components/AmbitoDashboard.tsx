@@ -19,6 +19,7 @@ type AmbitoDashboardProps = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 /* ----------------------------------------------------------
@@ -61,6 +62,7 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }) => {
   const years = useMemo<number[]>(
     () =>
@@ -77,8 +79,11 @@ const AmbitoDashboard: FC<AmbitoDashboardProps> = ({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

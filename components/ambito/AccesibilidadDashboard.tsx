@@ -1,14 +1,16 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { IndicatorRow } from "@/lib/loadExcelData";
 import { Info } from "lucide-react";
+import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 const PRIMARY = "#7F1D1D";
@@ -58,6 +60,7 @@ export default function AccesibilidadDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }: Props) {
   const years = useMemo<number[]>(
     () =>
@@ -66,16 +69,25 @@ export default function AccesibilidadDashboard({
           data
             .map((d) => d.year)
             .filter(
-              (y): y is number => typeof y === "number" && !Number.isNaN(y)
-            )
-        )
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
       ).sort((a, b) => b - a),
-    [data]
+    [data],
   );
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(
-    years[0] ?? null
+  const [selectedYear, setSelectedYear] = useState<number | null>(() =>
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
+  useEffect(() => {
+    if (selectedYear == null || !years.includes(selectedYear)) {
+      setSelectedYear(pickDefaultYear(years));
+    }
+  }, [years, selectedYear]);
+
   const [query, setQuery] = useState<string>("");
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
@@ -133,8 +145,8 @@ export default function AccesibilidadDashboard({
     return Array.from(map.values()).sort((a, b) =>
       (a.description ?? a.indicator ?? "").localeCompare(
         b.description ?? b.indicator ?? "",
-        "es"
-      )
+        "es",
+      ),
     );
   }, [filtered]);
 
@@ -177,7 +189,7 @@ export default function AccesibilidadDashboard({
               value={selectedYear ?? ""}
               onChange={(e) =>
                 setSelectedYear(
-                  e.target.value === "" ? null : Number(e.target.value)
+                  e.target.value === "" ? null : Number(e.target.value),
                 )
               }
               className="w-44 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97373]/40"

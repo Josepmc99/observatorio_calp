@@ -15,6 +15,7 @@ type GobernanzaDashboardProps = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 const PRIMARY = "#7F1D1D";
@@ -33,6 +34,7 @@ const GobernanzaDashboard: FC<GobernanzaDashboardProps> = ({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }) => {
   const years = useMemo<number[]>(
     () =>
@@ -49,8 +51,11 @@ const GobernanzaDashboard: FC<GobernanzaDashboardProps> = ({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

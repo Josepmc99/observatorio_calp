@@ -19,10 +19,11 @@ type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
-const BRAND = "#0EA5E9"; // sky
-const BRAND_DARK = "#0369A1"; // sky-700
+const BRAND = "#0EA5E9";
+const BRAND_DARK = "#0369A1";
 
 function formatValue(v: number | null) {
   if (v == null || Number.isNaN(v)) return "—";
@@ -54,6 +55,7 @@ export default function GestionAguasDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }: Props) {
   const years = useMemo(
     () =>
@@ -70,8 +72,11 @@ export default function GestionAguasDashboard({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));
@@ -88,13 +93,11 @@ export default function GestionAguasDashboard({
     [data, selectedYear],
   );
 
-  // ✅ ETIS específicos que quieres mostrar
   const depuracion = useMemo(
     () => filtered.find((d) => isEtis(d, "D.4.1")) ?? null,
     [filtered],
   );
 
-  // Ojo: según tu tabla
   // D.5.1.1 = consumo residente (m3)
   // D.5.1.2 = consumo turista internacional (m3)
   // D.5.1.3 = consumo turista nacional (m3)
@@ -111,7 +114,6 @@ export default function GestionAguasDashboard({
     [filtered],
   );
 
-  // lista “controlada”: solo estos 4, en el orden que quieres
   const cards = useMemo(() => {
     const arr = [
       depuracion,
@@ -120,7 +122,7 @@ export default function GestionAguasDashboard({
       consumoTuristaNac,
     ].filter(Boolean) as IndicatorRow[];
 
-    // si alguno no existe en ese año, lo dejamos igualmente “vacío” en UI (usamos nulls abajo)
+    // si alguno no existe en ese año, se deja igualmente “vacío” en UI
     return arr;
   }, [depuracion, consumoResidente, consumoTuristaInt, consumoTuristaNac]);
 
@@ -209,7 +211,7 @@ export default function GestionAguasDashboard({
         </div>
       </header>
 
-      {/* KPIs / ratios (bonitos y simples, sin charts) */}
+      {/* KPIs / ratios */}
       <section className="grid gap-4 md:grid-cols-3">
         <RatioKpi
           title="Turista int. vs residente"
@@ -217,7 +219,7 @@ export default function GestionAguasDashboard({
           numeratorLabel="turista internacional"
           denominatorLabel="residente"
           code="D.5.1.2 / D.5.1.1"
-          accentColor="#7C3AED" // violeta (diferente del resto)
+          accentColor="#7C3AED"
           helper={
             ratioIntVsRes == null
               ? "Sin datos suficientes para calcular la relación."
@@ -234,7 +236,7 @@ export default function GestionAguasDashboard({
           numeratorLabel="turista nacional"
           denominatorLabel="residente"
           code="D.5.1.3 / D.5.1.1"
-          accentColor="#0F766E" // teal
+          accentColor="#0F766E"
           helper={
             ratioNacVsRes == null
               ? "Sin datos suficientes para calcular la relación."
@@ -263,7 +265,7 @@ export default function GestionAguasDashboard({
               fallbackTitle="ETIS - Depuración de aguas residuales"
               etis="D.4.1"
               icon={Factory}
-              color="#6366F1" // indigo
+              color="#6366F1"
               onClick={() =>
                 setActiveKey(
                   depuracion?.indicator ??
@@ -282,7 +284,7 @@ export default function GestionAguasDashboard({
               fallbackTitle="ETIS - Consumo de agua (residente)"
               etis="D.5.1.1"
               icon={Home}
-              color="#10B981" // emerald
+              color="#10B981"
               onClick={() =>
                 setActiveKey(
                   consumoResidente?.indicator ??
@@ -301,7 +303,7 @@ export default function GestionAguasDashboard({
               fallbackTitle="ETIS - Consumo de agua (turista internacional)"
               etis="D.5.1.2"
               icon={Globe2}
-              color="#F97316" // orange
+              color="#F97316"
               onClick={() =>
                 setActiveKey(
                   consumoTuristaInt?.indicator ??
@@ -320,7 +322,7 @@ export default function GestionAguasDashboard({
               fallbackTitle="ETIS - Consumo de agua (turista nacional)"
               etis="D.5.1.3"
               icon={Users}
-              color={BRAND_DARK} // sky-700
+              color={BRAND_DARK}
               onClick={() =>
                 setActiveKey(
                   consumoTuristaNac?.indicator ??

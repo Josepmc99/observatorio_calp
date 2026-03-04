@@ -13,6 +13,7 @@ type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 
   // 👇 configuración para que sirva para Local / Turística
   breadcrumbLabel: string; // texto para el breadcrumb final (p.ej. "Satisfacción local")
@@ -49,6 +50,7 @@ export default function SatisfaccionDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
   breadcrumbLabel,
   intro,
   etisPositive,
@@ -73,8 +75,11 @@ export default function SatisfaccionDashboard({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

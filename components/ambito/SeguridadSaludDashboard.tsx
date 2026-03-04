@@ -17,6 +17,7 @@ type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 const BRAND = "#0B3D91"; // blue-ish
@@ -97,6 +98,7 @@ export default function SeguridadSaludDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }: Props) {
   const years = useMemo(
     () =>
@@ -113,8 +115,11 @@ export default function SeguridadSaludDashboard({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

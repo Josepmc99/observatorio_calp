@@ -17,6 +17,7 @@ type Props = {
   scopeName: string;
   indicators: IndicatorRow[];
   lodgings: LodgingRow[];
+  initialYear?: number | null;
 };
 
 const PRIMARY = "#7F1D1D";
@@ -39,6 +40,7 @@ export default function RendimientoDashboard({
   scopeName,
   indicators,
   lodgings,
+  initialYear,
 }: Props) {
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -51,8 +53,11 @@ export default function RendimientoDashboard({
   }, [lodgings, indicators]);
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

@@ -22,6 +22,7 @@ type Props = {
   scopeName: string;
   indicators: IndicatorRow[];
   tourists: TouristRow[];
+  initialYear?: number | null;
 };
 
 /** Paleta SOLO para gráficos (diferente a la temática granate) */
@@ -76,6 +77,7 @@ export default function EstacionalidadDashboard({
   scopeName,
   indicators,
   tourists,
+  initialYear,
 }: Props) {
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -87,8 +89,11 @@ export default function EstacionalidadDashboard({
   }, [tourists, indicators]);
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

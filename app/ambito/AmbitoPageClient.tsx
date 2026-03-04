@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 import type { DashboardData, IndicatorRow } from "@/lib/loadExcelData";
 import AmbitoDashboard from "@/components/AmbitoDashboard";
@@ -58,7 +58,6 @@ import {
 
 type AmbitoPageClientProps = {
   data: DashboardData;
-  initialYear?: number | null;
 };
 
 function norm(s: string) {
@@ -310,21 +309,13 @@ function coverageStats(rows: IndicatorRow[]) {
 
 export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const decodedScopeId = (searchParams.get("scopeId") ?? "").trim();
   const yearParam = searchParams.get("year");
-  const yearParamStr = yearParam ?? "";
-  const selectedYear = yearParam ? Number(yearParam) : null;
-  const hasSelectedYear = Number.isFinite(selectedYear as number);
 
-  const scopeIndicators = useMemo(() => {
-    const filtered = data.indicators.filter(
-      (d) => (d.scopeId ?? "").trim() === decodedScopeId,
-    );
-
-    if (!hasSelectedYear) return filtered;
-
-    return filtered.filter((d) => d.year === selectedYear);
-  }, [data.indicators, decodedScopeId, hasSelectedYear, selectedYear]);
+  // listado si no hay scopeId
+  const [query, setQuery] = useState("");
 
   /** Listado de ámbitos agrupado por scopeId */
   const scopes = useMemo(() => {
@@ -347,9 +338,6 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     return Array.from(map.values());
   }, [data.indicators]);
 
-  // listado si no hay scopeId
-  const [query, setQuery] = useState("");
-
   const filteredScopes = useMemo(() => {
     const q = norm(query);
 
@@ -370,12 +358,9 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
         return hay.includes(q);
       })
       .sort((a, b) => {
-        // 1) Obligatorio primero
         if (a.seg.weight !== b.seg.weight) return a.seg.weight - b.seg.weight;
-        // 2) más cobertura primero
         if (b.stats.coverage !== a.stats.coverage)
           return b.stats.coverage - a.stats.coverage;
-        // 3) alfabético
         return a.scopeName.localeCompare(b.scopeName, "es");
       });
 
@@ -391,6 +376,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
   }, [data.indicators]);
 
   if (!decodedScopeId) {
+    const yearParamStr = yearParam ?? "";
     return (
       <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -465,8 +451,16 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     );
   }
 
-  // si hay scopeId pero no hay datos
-  if (scopeIndicators.length === 0) {
+  // ✅ datos COMPLETOS del ámbito (sin filtrar por año)
+  const scopeAll = useMemo(
+    () =>
+      data.indicators.filter(
+        (d) => (d.scopeId ?? "").trim() === decodedScopeId,
+      ),
+    [data.indicators, decodedScopeId],
+  );
+
+  if (scopeAll.length === 0) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10 space-y-2">
         <h1 className="text-2xl font-semibold">
@@ -475,10 +469,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
         <p className="text-lg font-medium text-slate-700">“{decodedScopeId}”</p>
         <p className="text-sm text-slate-500">
           Vuelve al listado en{" "}
-          <Link
-            href={`/ambito${yearParamStr ? `?year=${encodeURIComponent(yearParamStr)}` : ""}`}
-            className="underline"
-          >
+          <Link href="/ambito" className="underline">
             /ambito
           </Link>
           .
@@ -487,16 +478,43 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     );
   }
 
-  const scopeName = scopeIndicators[0].scope ?? `Ámbito ${decodedScopeId}`;
+  // años disponibles (para validar el yearParam)
+  const yearsForScope = useMemo<number[]>(
+    () =>
+      Array.from(
+        new Set(
+          scopeAll
+            .map((d) => d.year)
+            .filter(
+              (y): y is number => typeof y === "number" && !Number.isNaN(y),
+            ),
+        ),
+      ).sort((a, b) => a - b),
+    [scopeAll],
+  );
+
+  const parsedYear = yearParam ? Number(yearParam) : null;
+  const hasSelectedYear = Number.isFinite(parsedYear as number);
+
+  const effectiveYear = useMemo<number | null>(() => {
+    if (!yearsForScope.length) return null;
+    if (hasSelectedYear && yearsForScope.includes(parsedYear as number)) {
+      return parsedYear as number;
+    }
+    return yearsForScope[yearsForScope.length - 1] ?? null;
+  }, [yearsForScope, hasSelectedYear, parsedYear]);
+
+  const scopeName = scopeAll[0]?.scope ?? `Ámbito ${decodedScopeId}`;
   const scopeKey = norm(scopeName);
 
-  // 🔀 Dashboards específicos
+  // 🔀 Dashboards específicos (PASANDO scopeAll + initialYear)
   if (scopeKey === "ambiental" || scopeKey === "medio ambiente") {
     return (
       <AmbientalDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -506,7 +524,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <GobernanzaDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -516,8 +535,9 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <EstacionalidadDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        indicators={scopeIndicators}
+        indicators={scopeAll}
         tourists={data.tourists}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -527,8 +547,9 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <RendimientoDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        indicators={scopeIndicators}
+        indicators={scopeAll}
         lodgings={data.lodgings}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -541,7 +562,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <SatisfaccionLocalDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -555,7 +577,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <SatisfaccionTuristicaDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -565,7 +588,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <BeneficiosEconomicosDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -575,7 +599,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <GestionAguasDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -585,7 +610,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <GestionResiduosDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -598,7 +624,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <AccionClimaDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -608,7 +635,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <ImpactoSocialDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -618,7 +646,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <SeguridadSaludDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -628,7 +657,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <ReduccionImpactoTransporteDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -638,7 +668,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <EventosSosteniblesDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -652,7 +683,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <ProteccionPaisajeBiodiversidadDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -666,7 +698,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <EducacionFormacionSostenibleDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -676,7 +709,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <AccesibilidadDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -686,7 +720,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <GestionEnergeticaDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -696,7 +731,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
       <CadenaSuministrosDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
-        data={scopeIndicators}
+        data={scopeAll}
+        initialYear={effectiveYear}
       />
     );
   }
@@ -706,7 +742,8 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     <AmbitoDashboard
       scopeId={decodedScopeId}
       scopeName={scopeName}
-      data={scopeIndicators}
+      data={scopeAll}
+      initialYear={effectiveYear}
     />
   );
 }
@@ -788,12 +825,9 @@ function ScopeCard(props: {
 
   return (
     <Link
-      href={`/ambito?scopeId=${encodeURIComponent(scopeId)}${
-        yearParam ? `&year=${encodeURIComponent(yearParam)}` : ""
-      }`}
+      href={`/ambito?scopeId=${encodeURIComponent(scopeId)}${yearParam ? `&year=${encodeURIComponent(yearParam)}` : ""}`}
       className="group rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-200"
     >
-      {/* Header con gradiente */}
       <div className={`rounded-t-2xl bg-gradient-to-b ${gradient} p-5`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -823,16 +857,13 @@ function ScopeCard(props: {
         </div>
       </div>
 
-      {/* Body */}
       <div className="p-5 pt-4">
-        {/* KPIs */}
         <div className="grid grid-cols-3 gap-3">
           <MiniKpi label="Indicadores" value={String(total)} />
           <MiniKpi label="Con dato" value={String(withValue)} good />
           <MiniKpi label="Pendientes" value={String(missing)} warn />
         </div>
 
-        {/* Cobertura */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-[11px] text-slate-500">
             <span className="font-medium uppercase tracking-wide">
@@ -868,7 +899,6 @@ function ScopeCard(props: {
           </div>
         </div>
 
-        {/* CTA */}
         <div className="mt-5 flex items-center justify-between text-xs font-medium">
           <span className="text-slate-500">Abrir dashboard</span>
           <span className="inline-flex items-center gap-1 text-slate-800 group-hover:text-slate-900">

@@ -17,14 +17,16 @@ type AmbientalDashboardProps = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }) => {
-  // misma lógica de años y filtros, pero puedes simplificar si quieres
+  // lógica de años y filtros
   const years = useMemo<number[]>(
     () =>
       Array.from(
@@ -40,13 +42,17 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));
     }
   }, [years, selectedYear]);
+
   const [selectedIndicator, setSelectedIndicator] = useState<string | null>(
     null,
   );
@@ -116,13 +122,7 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
     }));
   }, [activeIndicator, data]);
 
-  // Para ambiental, imaginemos que NO queremos gráfico de barras, solo:
-  // - Cards por indicador
-  // - Cobertura
-  // - Serie temporal + ficha
-  // (y si quieres, no pasamos tableRows y la tabla desaparece)
-
-  const tableRows: IndicatorRow[] = []; // por ahora no mostramos tabla
+  const tableRows: IndicatorRow[] = [];
   const scopeColor = "#15803D"; // verde para el ámbito ambiental
 
   return (
@@ -170,14 +170,14 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
         </div>
       </header>
 
-      {/* Cards por indicador muy protagonistas */}
+      {/* Cards por indicador */}
       <IndicatorGrid
         filtered={filtered}
         activeIndicatorName={activeIndicator?.indicator ?? null}
         onSelectIndicator={setSelectedIndicator}
       />
 
-      {/* Cobertura + serie temporal + ficha (sin tabla ni barras) */}
+      {/* Cobertura + serie temporal + ficha  */}
       <section className="grid gap-6 xl:grid-cols-3">
         <CoveragePanel
           coverage={coverage}
@@ -190,7 +190,7 @@ const AmbientalDashboard: FC<AmbientalDashboardProps> = ({
           activeIndicator={activeIndicator}
           timeSeries={timeSeries}
           scopeName={scopeName}
-          tableRows={tableRows} // vacío → no se muestra tabla
+          tableRows={tableRows}
           selectedYear={selectedYear}
           onSelectIndicator={setSelectedIndicator}
         />

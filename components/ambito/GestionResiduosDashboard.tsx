@@ -12,6 +12,7 @@ type Props = {
   scopeId: string;
   scopeName: string;
   data: IndicatorRow[];
+  initialYear?: number | null;
 };
 
 const BRAND = "#7C3AED"; // violeta
@@ -54,6 +55,7 @@ export default function GestionResiduosDashboard({
   scopeId,
   scopeName,
   data,
+  initialYear,
 }: Props) {
   const years = useMemo(
     () =>
@@ -70,8 +72,11 @@ export default function GestionResiduosDashboard({
   );
 
   const [selectedYear, setSelectedYear] = useState<number | null>(() =>
-    pickDefaultYear(years),
+    initialYear != null && years.includes(initialYear)
+      ? initialYear
+      : pickDefaultYear(years),
   );
+
   useEffect(() => {
     if (selectedYear == null || !years.includes(selectedYear)) {
       setSelectedYear(pickDefaultYear(years));

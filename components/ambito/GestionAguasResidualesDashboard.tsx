@@ -2,9 +2,8 @@
 
 import React, { FC, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Droplets, Users, Globe2, Home, Info } from "lucide-react";
+import { Factory, Info } from "lucide-react";
 import type { IndicatorRow } from "@/lib/loadExcelData";
-import RatioKpi from "@/components/ui/RatioKpi";
 import { pickDefaultYear } from "@/lib/pickDefaultYear";
 
 type Props = {
@@ -14,8 +13,8 @@ type Props = {
   initialYear?: number | null;
 };
 
-const BRAND = "#0EA5E9";
-const BRAND_DARK = "#0369A1";
+const BRAND = "#6366F1"; // indigo
+const BRAND_DARK = "#4338CA";
 
 function formatValue(v: number | null) {
   if (v == null || Number.isNaN(v)) return "—";
@@ -31,7 +30,22 @@ function isEtis(row: IndicatorRow, code: string) {
   return rowEtis === normEtis(code);
 }
 
-export default function GestionAguasDashboard({
+function formatByUnit(row: IndicatorRow | null) {
+  if (!row) return "—";
+  const unit = (row.unidad ?? "").trim().toLowerCase();
+
+  if (unit === "%" || unit.includes("%") || isEtis(row, "D.4.1")) {
+    return row.value == null
+      ? "—"
+      : `${row.value.toLocaleString("es-ES", {
+          maximumFractionDigits: 2,
+        })}%`;
+  }
+
+  return formatValue(row.value);
+}
+
+export default function GestionAguasResidualesDashboard({
   scopeId,
   scopeName,
   data,
@@ -73,51 +87,26 @@ export default function GestionAguasDashboard({
     [data, selectedYear],
   );
 
-  const consumoResidente = useMemo(
-    () => filtered.find((d) => isEtis(d, "D.5.1.1")) ?? null,
-    [filtered],
-  );
-  const consumoTuristaInt = useMemo(
-    () => filtered.find((d) => isEtis(d, "D.5.1.2")) ?? null,
-    [filtered],
-  );
-  const consumoTuristaNac = useMemo(
-    () => filtered.find((d) => isEtis(d, "D.5.1.3")) ?? null,
+  const depuracion = useMemo(
+    () => filtered.find((d) => isEtis(d, "D.4.1")) ?? null,
     [filtered],
   );
 
   const active = useMemo(() => {
     if (!activeKey) return null;
-    return (
-      [consumoResidente, consumoTuristaInt, consumoTuristaNac].find(
-        (r) => r?.indicator === activeKey,
-      ) ?? null
-    );
-  }, [activeKey, consumoResidente, consumoTuristaInt, consumoTuristaNac]);
-
-  const ratioIntVsRes =
-    consumoTuristaInt?.value != null &&
-    consumoResidente?.value != null &&
-    consumoResidente.value !== 0
-      ? consumoTuristaInt.value / consumoResidente.value
-      : null;
-
-  const ratioNacVsRes =
-    consumoTuristaNac?.value != null &&
-    consumoResidente?.value != null &&
-    consumoResidente.value !== 0
-      ? consumoTuristaNac.value / consumoResidente.value
-      : null;
+    return depuracion?.indicator === activeKey ? depuracion : null;
+  }, [activeKey, depuracion]);
 
   return (
     <div className="space-y-6">
+      {/* HEADER */}
       <header className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           <p className="text-xs text-slate-400">
             <Link href="/" className="hover:underline">
               Inicio
             </Link>{" "}
-            / Gestión del agua
+            / Gestión de aguas residuales
           </p>
 
           <div className="mt-1 flex items-center gap-2">
@@ -125,7 +114,7 @@ export default function GestionAguasDashboard({
               className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
               style={{ backgroundColor: BRAND }}
             >
-              <Droplets className="h-5 w-5" />
+              <Factory className="h-5 w-5" />
             </div>
             <h1 className="text-2xl font-semibold text-slate-900">
               {scopeName}
@@ -133,7 +122,7 @@ export default function GestionAguasDashboard({
           </div>
 
           <p className="mt-1 text-sm text-slate-500">
-            Consumo de agua comparado entre residentes y turistas.
+            Tratamiento y depuración de aguas residuales del destino.
           </p>
         </div>
 
@@ -150,7 +139,7 @@ export default function GestionAguasDashboard({
                   e.target.value === "" ? null : Number(e.target.value),
                 )
               }
-              className="w-40 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200"
+              className="w-40 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
             >
               <option value="">Todos</option>
               {years.map((y) => (
@@ -163,107 +152,44 @@ export default function GestionAguasDashboard({
         </div>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <RatioKpi
-          title="Turista int. vs residente"
-          ratio={ratioIntVsRes}
-          numeratorLabel="turista internacional"
-          denominatorLabel="residente"
-          code="D.5.1.2 / D.5.1.1"
-          accentColor="#7C3AED"
-          helper={
-            ratioIntVsRes == null
-              ? "Sin datos suficientes para calcular la relación."
-              : `El turista internacional consume ${ratioIntVsRes.toLocaleString(
-                  "es-ES",
-                  { maximumFractionDigits: 2 },
-                )} veces más agua que un residente.`
-          }
-        />
-
-        <RatioKpi
-          title="Turista nac. vs residente"
-          ratio={ratioNacVsRes}
-          numeratorLabel="turista nacional"
-          denominatorLabel="residente"
-          code="D.5.1.3 / D.5.1.1"
-          accentColor="#0F766E"
-          helper={
-            ratioNacVsRes == null
-              ? "Sin datos suficientes para calcular la relación."
-              : `El turista nacional consume ${ratioNacVsRes.toLocaleString(
-                  "es-ES",
-                  { maximumFractionDigits: 2 },
-                )} veces más agua que un residente.`
-          }
+      {/* KPI principal */}
+      <section className="grid gap-4 md:grid-cols-1">
+        <MiniStat
+          title="Depuración secundaria"
+          value={formatByUnit(depuracion)}
+          note="ETIS D.4.1"
+          accent
         />
       </section>
 
+      {/* LISTADO + DETALLE */}
       <section className="grid gap-6 lg:grid-cols-3">
+        {/* CARD GRANDE */}
         <div className="lg:col-span-2">
-          <div className="grid gap-4 md:grid-cols-2">
-            <WaterCard
-              row={consumoResidente}
-              fallbackTitle="ETIS - Consumo de agua (residente)"
-              etis="D.5.1.1"
-              icon={Home}
-              color="#10B981"
+          <div className="grid gap-4 md:grid-cols-1">
+            <SewageCard
+              row={depuracion}
+              fallbackTitle="ETIS - Depuración de aguas residuales"
+              etis="D.4.1"
+              icon={Factory}
+              color={BRAND}
               onClick={() =>
                 setActiveKey(
-                  consumoResidente?.indicator ??
-                    "ETIS - Consumo de agua (residente)",
+                  depuracion?.indicator ??
+                    "ETIS - Depuración de aguas residuales",
                 )
               }
               active={
                 activeKey ===
-                (consumoResidente?.indicator ??
-                  "ETIS - Consumo de agua (residente)")
+                  (depuracion?.indicator ??
+                    "ETIS - Depuración de aguas residuales") || !activeKey
               }
-              formatValue={(r) => formatValue(r?.value ?? null)}
-            />
-
-            <WaterCard
-              row={consumoTuristaInt}
-              fallbackTitle="ETIS - Consumo de agua (turista internacional)"
-              etis="D.5.1.2"
-              icon={Globe2}
-              color="#F97316"
-              onClick={() =>
-                setActiveKey(
-                  consumoTuristaInt?.indicator ??
-                    "ETIS - Consumo de agua (turista internacional)",
-                )
-              }
-              active={
-                activeKey ===
-                (consumoTuristaInt?.indicator ??
-                  "ETIS - Consumo de agua (turista internacional)")
-              }
-              formatValue={(r) => formatValue(r?.value ?? null)}
-            />
-
-            <WaterCard
-              row={consumoTuristaNac}
-              fallbackTitle="ETIS - Consumo de agua (turista nacional)"
-              etis="D.5.1.3"
-              icon={Users}
-              color={BRAND_DARK}
-              onClick={() =>
-                setActiveKey(
-                  consumoTuristaNac?.indicator ??
-                    "ETIS - Consumo de agua (turista nacional)",
-                )
-              }
-              active={
-                activeKey ===
-                (consumoTuristaNac?.indicator ??
-                  "ETIS - Consumo de agua (turista nacional)")
-              }
-              formatValue={(r) => formatValue(r?.value ?? null)}
+              formatValue={(r) => formatByUnit(r)}
             />
           </div>
         </div>
 
+        {/* PANEL DETALLE */}
         <aside className="lg:col-span-1">
           <div className="sticky top-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
@@ -290,7 +216,7 @@ export default function GestionAguasDashboard({
             {!active ? (
               <div className="mt-3 flex gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                 <Info className="mt-0.5 h-4 w-4" />
-                <p>Haz clic en una tarjeta para ver el detalle completo.</p>
+                <p>Haz clic en la tarjeta para ver el detalle completo.</p>
               </div>
             ) : (
               <div className="mt-4 space-y-4">
@@ -298,8 +224,10 @@ export default function GestionAguasDashboard({
                 <KV label="Año" value={String(active.year ?? "—")} />
                 <KV
                   label="Valor"
-                  value={`${formatValue(active.value ?? null)} ${
-                    active.unidad ?? ""
+                  value={`${formatByUnit(active)}${
+                    active.unidad && !String(active.unidad).includes("%")
+                      ? ` ${active.unidad}`
+                      : ""
                   }`.trim()}
                   accent
                 />
@@ -307,12 +235,15 @@ export default function GestionAguasDashboard({
                 <KV label="Tiempo" value={active.at ?? "—"} />
                 <KV label="Organismo" value={active.organismo ?? "—"} />
                 <KV label="Fuente" value={active.fuente ?? "—"} />
+
                 <Divider />
+
                 <Block label="Descripción" value={active.description ?? "—"} />
                 <Block
                   label="Datos requeridos"
                   value={active.requiredData ?? "—"}
                 />
+
                 {active.formula && (
                   <Block label="Método de cálculo" value={active.formula} />
                 )}
@@ -343,7 +274,7 @@ const KV: FC<{ label: string; value: string; accent?: boolean }> = ({
     </div>
     <div
       className={`mt-1 text-sm ${
-        accent ? "font-semibold text-sky-800" : "text-slate-800"
+        accent ? "font-semibold text-indigo-800" : "text-slate-800"
       }`}
     >
       {value}
@@ -362,7 +293,28 @@ const Block: FC<{ label: string; value: string }> = ({ label, value }) => (
   </div>
 );
 
-const WaterCard: FC<{
+const MiniStat: FC<{
+  title: string;
+  value: string;
+  note?: string;
+  accent?: boolean;
+}> = ({ title, value, note, accent }) => (
+  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+      {title}
+    </div>
+    <div
+      className={`mt-2 text-3xl font-semibold ${
+        accent ? "text-indigo-700" : "text-slate-900"
+      }`}
+    >
+      {value}
+    </div>
+    {note && <div className="mt-2 text-xs text-slate-500">{note}</div>}
+  </div>
+);
+
+const SewageCard: FC<{
   row: IndicatorRow | null;
   fallbackTitle: string;
   etis: string;
@@ -392,7 +344,7 @@ const WaterCard: FC<{
       type="button"
       onClick={onClick}
       className={`group rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none ${
-        active ? "border-sky-300 ring-2 ring-sky-200" : "border-slate-200"
+        active ? "border-indigo-300 ring-2 ring-indigo-200" : "border-slate-200"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -428,13 +380,20 @@ const WaterCard: FC<{
       </div>
 
       <div className="mt-3 space-y-1 text-[11px] text-slate-500">
-        <div className="flex gap-2">
-          <span className="font-medium text-slate-400">Fuente:</span>
-          <span className="line-clamp-1">{src ?? "—"}</span>
-        </div>
+        {src ? (
+          <div className="flex gap-2">
+            <span className="font-medium text-slate-400">Fuente:</span>
+            <span className="line-clamp-1">{src}</span>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <span className="font-medium text-slate-400">Fuente:</span>
+            <span>—</span>
+          </div>
+        )}
       </div>
 
-      <div className="mt-4 text-xs font-medium text-sky-700 group-hover:text-sky-900">
+      <div className="mt-4 text-xs font-medium text-indigo-700 group-hover:text-indigo-900">
         Ver detalle →
       </div>
     </button>

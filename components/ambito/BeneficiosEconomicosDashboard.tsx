@@ -25,6 +25,16 @@ function normalize(s: string) {
   return s.trim().toLowerCase();
 }
 
+function cardKey(row: IndicatorRow) {
+  const year = row.year ?? "";
+  const etis = (row.etis ?? "").trim();
+  const indicator = (row.indicator ?? "").trim();
+  const description = (row.description ?? "").trim();
+  const scope = (row.scope ?? "").trim();
+
+  return `${year}__${scope}__${etis}__${indicator}__${description}`;
+}
+
 export default function BeneficiosEconomicosDashboard({
   scopeId,
   scopeName,
@@ -88,8 +98,8 @@ export default function BeneficiosEconomicosDashboard({
   }, [data, selectedYear, query]);
 
   /**
-   * Una card por indicador (por año filtrado).
-   * Si hay duplicados, priorizamos la fila más “completa”.
+   * Una card por fila lógica del Excel.
+   * Si hay duplicados exactos, priorizamos la fila más completa.
    */
   const cards = useMemo(() => {
     const map = new Map<string, IndicatorRow>();
@@ -107,22 +117,24 @@ export default function BeneficiosEconomicosDashboard({
     }
 
     for (const row of filtered) {
-      if (!row.indicator) continue;
-      const key = row.indicator;
-
+      const key = cardKey(row);
       const existing = map.get(key);
-      if (!existing) map.set(key, row);
-      else if (score(row) > score(existing)) map.set(key, row);
+
+      if (!existing) {
+        map.set(key, row);
+      } else if (score(row) > score(existing)) {
+        map.set(key, row);
+      }
     }
 
     return Array.from(map.values()).sort((a, b) =>
-      (a.indicator ?? "").localeCompare(b.indicator ?? "", "es"),
+      (a.description ?? "").localeCompare(b.description ?? "", "es"),
     );
   }, [filtered]);
 
   const active = useMemo(() => {
     if (!activeKey) return null;
-    return cards.find((c) => c.indicator === activeKey) ?? null;
+    return cards.find((c) => cardKey(c) === activeKey) ?? null;
   }, [activeKey, cards]);
 
   const stats = useMemo(() => {
@@ -223,6 +235,7 @@ export default function BeneficiosEconomicosDashboard({
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {cards.map((row) => {
+                const key = cardKey(row);
                 const title = row.indicator ?? "—";
                 const year = row.year ?? null;
                 const unit = row.unidad ?? row.at ?? "—";
@@ -231,11 +244,11 @@ export default function BeneficiosEconomicosDashboard({
 
                 return (
                   <button
-                    key={`${title}-${year ?? "na"}`}
+                    key={key}
                     type="button"
-                    onClick={() => setActiveKey(title)}
+                    onClick={() => setActiveKey(key)}
                     className={`group rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#F97373]/40 ${
-                      activeKey === title
+                      activeKey === key
                         ? "border-[#7F1D1D] ring-2 ring-[#F97373]/40"
                         : "border-slate-200"
                     }`}
@@ -269,7 +282,7 @@ export default function BeneficiosEconomicosDashboard({
 
                     {/* valor */}
                     <div className="mt-4 flex items-baseline justify-between gap-3">
-                      <div className="flex items-baseline gap-2 min-w-0">
+                      <div className="flex min-w-0 items-baseline gap-2">
                         <span className="text-2xl font-semibold text-[#7F1D1D]">
                           {formatValue(row.value)}
                         </span>
@@ -377,7 +390,6 @@ export default function BeneficiosEconomicosDashboard({
         </aside>
       </section>
 
-      {/* (Opcional) si quieres mantener una rejilla no clicable debajo */}
       <div className="hidden">
         <IndicatorGrid filtered={filtered} clickable={false} />
       </div>

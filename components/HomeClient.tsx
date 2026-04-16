@@ -27,6 +27,7 @@ import {
   Search,
   CheckCircle2,
   AlertTriangle,
+  Factory,
 } from "lucide-react";
 import { pickDefaultYear, PREFERRED_DEFAULT_YEAR } from "@/lib/pickDefaultYear";
 
@@ -143,6 +144,14 @@ function scopeMeta(scopeName: string) {
       desc: "Impacto económico del turismo en el destino.",
       accent: "#7C3AED",
       grad: "from-violet-50 to-white",
+    };
+
+  if (k.includes("aguas residuales") || k.includes("residuales"))
+    return {
+      icon: Factory,
+      desc: "Tratamiento y depuración de aguas residuales.",
+      accent: "#6366F1",
+      grad: "from-indigo-50 to-white",
     };
 
   if (k.includes("agua"))

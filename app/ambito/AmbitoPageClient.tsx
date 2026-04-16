@@ -16,6 +16,7 @@ import SatisfaccionLocalDashboard from "@/components/ambito/SatisfaccionLocalDas
 import SatisfaccionTuristicaDashboard from "@/components/ambito/SatisfaccionTuristicaDashboard";
 import BeneficiosEconomicosDashboard from "@/components/ambito/BeneficiosEconomicosDashboard";
 import GestionAguasDashboard from "@/components/ambito/GestionAguasDashboard";
+import GestionAguasResidualesDashboard from "@/components/ambito/GestionAguasResidualesDashboard";
 import GestionResiduosDashboard from "@/components/ambito/GestionResiduosDashboard";
 import AccionClimaDashboard from "@/components/ambito/AccionClimaDashboard";
 import ImpactoSocialDashboard from "@/components/ambito/ImpactoSocialDashboard";
@@ -54,6 +55,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Sparkles,
+  Factory,
 } from "lucide-react";
 
 type AmbitoPageClientProps = {
@@ -148,13 +150,28 @@ const AMBITO_CATALOG: Array<{
     gradient: "from-violet-50 to-white",
   },
   {
+    match: (k) => k.includes("aguas residuales") || k.includes("residuales"),
+    titleFallback: "Gestión de aguas residuales",
+    description: "Tratamiento y depuración de aguas residuales.",
+    icon: Factory,
+    accent: "#6366F1",
+    gradient: "from-indigo-50 to-white",
+  },
+  {
     match: (k) => k.includes("agua"),
     titleFallback: "Gestión del agua",
-    description:
-      "Depuración y consumos comparados entre residentes y turistas.",
+    description: "Consumos comparados entre residentes y turistas.",
     icon: Droplets,
     accent: "#0284C7",
     gradient: "from-sky-50 to-white",
+  },
+  {
+    match: (k) => k.includes("aguas residuales"),
+    titleFallback: "Gestión de aguas residuales",
+    description: "Tratamiento y depuración de aguas residuales.",
+    icon: Factory,
+    accent: "#6366F1",
+    gradient: "from-indigo-50 to-white",
   },
   {
     match: (k) => k.includes("residuos"),
@@ -451,7 +468,7 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
     );
   }
 
-  // ✅ datos COMPLETOS del ámbito (sin filtrar por año)
+  // datos COMPLETOS del ámbito (sin filtrar por año)
   const scopeAll = useMemo(
     () =>
       data.indicators.filter(
@@ -586,6 +603,20 @@ export default function AmbitoPageClient({ data }: AmbitoPageClientProps) {
   if (scopeKey.includes("beneficios") && scopeKey.includes("econ")) {
     return (
       <BeneficiosEconomicosDashboard
+        scopeId={decodedScopeId}
+        scopeName={scopeName}
+        data={scopeAll}
+        initialYear={effectiveYear}
+      />
+    );
+  }
+
+  if (
+    scopeKey.includes("aguas residuales") ||
+    scopeKey.includes("residuales")
+  ) {
+    return (
+      <GestionAguasResidualesDashboard
         scopeId={decodedScopeId}
         scopeName={scopeName}
         data={scopeAll}
